@@ -1,58 +1,94 @@
 "use client";
 
-import { useState } from "react";
-import type { CreateNoteDto } from "../../lib/api";
+import type { FC } from "react";
+import { Formik, Form, Field, ErrorMessage } from "formik";
+import * as Yup from "yup";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { createNote, type CreateNoteDto } from "../../lib/api";
 import type { NoteTag } from "../../types/note";
 import css from "./NoteForm.module.css";
 
 interface NoteFormProps {
-  onSubmit: (payload: CreateNoteDto) => void;
+  onCancel: () => void;
 }
 
-export default function NoteForm({ onSubmit }: NoteFormProps) {
-  const [title, setTitle] = useState("");
-  const [content, setContent] = useState("");
-  const [tag, setTag] = useState<NoteTag>("Todo");
+const tags: NoteTag[] = ["Todo", "Work", "Personal", "Meeting", "Shopping"];
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    onSubmit({ title, content, tag });
-  };
+const validationSchema = Yup.object({
+  title: Yup.string().trim().required("Title is required"),
+  content: Yup.string().trim().required("Content is required"),
+  tag: Yup.mixed<NoteTag>().oneOf(tags).required("Tag is required"),
+});
+
+const NoteForm: FC<NoteFormProps> = ({ onCancel }) => {
+  const queryClient = useQueryClient();
+
+  const mutation = useMutation({
+    mutationFn: (payload: CreateNoteDto) => createNote(payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["notes"] });
+      onCancel();
+    },
+  });
 
   return (
-    <form className={css.form} onSubmit={handleSubmit}>
-      <input
-        className={css.input}
-        type="text"
-        value={title}
-        onChange={(e) => setTitle(e.target.value)}
-        placeholder="Note title"
-        required
-      />
+    <Formik<CreateNoteDto>
+      initialValues={{
+        title: "",
+        content: "",
+        tag: "Todo",
+      }}
+      validationSchema={validationSchema}
+      onSubmit={(values) => mutation.mutate(values)}
+    >
+      {({ isValid }) => (
+        <Form className={css.form}>
+          <Field
+            className={css.input}
+            type="text"
+            name="title"
+            placeholder="Note title"
+          />
+          <ErrorMessage name="title" component="p" className={css.error} />
 
-      <textarea
-        className={css.textarea}
-        value={content}
-        onChange={(e) => setContent(e.target.value)}
-        placeholder="Note content"
-        required
-      />
+          <Field
+            as="textarea"
+            className={css.textarea}
+            name="content"
+            placeholder="Note content"
+          />
+          <ErrorMessage name="content" component="p" className={css.error} />
 
-      <select
-        className={css.select}
-        value={tag}
-        onChange={(e) => setTag(e.target.value as NoteTag)}
-      >
-        <option>Todo</option>
-        <option>Work</option>
-        <option>Personal</option>
-        <option>Meeting</option>
-        <option>Shopping</option>
-      </select>
+          <Field as="select" className={css.select} name="tag">
+            {tags.map((tag) => (
+              <option key={tag} value={tag}>
+                {tag}
+              </option>
+            ))}
+          </Field>
+          <ErrorMessage name="tag" component="p" className={css.error} />
 
-      <button className={css.button} type="submit">
-        Create note
-      </button>
-    </form>
+          <div className={css.actions}>
+            <button
+              className={css.submitButton}
+              type="submit"
+              disabled={!isValid || mutation.isPending}
+            >
+              Create note
+            </button>
+
+            <button
+              className={css.cancelButton}
+              type="button"
+              onClick={onCancel}
+            >
+              Cancel
+            </button>
+          </div>
+        </Form>
+      )}
+    </Formik>
   );
-}
+};
+
+export default NoteForm;

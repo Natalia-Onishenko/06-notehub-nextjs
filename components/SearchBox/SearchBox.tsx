@@ -1,48 +1,30 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import type { FC } from "react";
 import css from "./SearchBox.module.css";
 
 interface SearchBoxProps {
-  initialValue?: string;
+  value: string;
   onSearch: (value: string) => void;
   onAddClick: () => void;
 }
 
-export default function SearchBox({
-  initialValue = "",
-  onSearch,
-  onAddClick,
-}: SearchBoxProps) {
-  const [value, setValue] = useState(initialValue);
-
-  useEffect(() => {
-    setValue(initialValue);
-  }, [initialValue]);
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    onSearch(value.trim());
-  };
-
+const SearchBox: FC<SearchBoxProps> = ({ value, onSearch, onAddClick }) => {
   return (
     <div className={css.toolbar}>
-      <form className={css.form} onSubmit={handleSubmit}>
-        <input
-          className={css.input}
-          type="text"
-          value={value}
-          onChange={(e) => setValue(e.target.value)}
-          placeholder="Search notes..."
-        />
-        <button className={css.button} type="submit">
-          Search
-        </button>
-      </form>
+      <input
+        className={css.input}
+        type="text"
+        placeholder="Search notes..."
+        value={value}
+        onChange={(e) => onSearch(e.target.value)}
+      />
 
-      <button className={css.button} onClick={onAddClick}>
+      <button className={css.button} type="button" onClick={onAddClick}>
         + Create note
       </button>
     </div>
   );
-}
+};
+
+export default SearchBox;

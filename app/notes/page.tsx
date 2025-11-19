@@ -1,5 +1,11 @@
+import type { JSX } from "react";
 import { HydrationBoundary, dehydrate } from "@tanstack/react-query";
-import { fetchQueryClient, fetchNotes } from "../../lib/api";
+
+import {
+  fetchNotes,
+  fetchQueryClient,
+  type FetchNotesResponse,
+} from "../../lib/api";
 import NotesClient from "./Notes.client";
 
 interface NotesPageProps {
@@ -8,16 +14,23 @@ interface NotesPageProps {
 
 export const dynamic = "force-dynamic";
 
-export default async function NotesPage({ searchParams }: NotesPageProps) {
+export default async function NotesPage({
+  searchParams,
+}: NotesPageProps): Promise<JSX.Element> {
   const params = await searchParams;
 
-  const page = Number(params.page ?? "1");
-  const search =
-    typeof params.search === "string" ? params.search : "";
+  const pageParam = params.page;
+  const page =
+    typeof pageParam === "string" && !Number.isNaN(Number(pageParam))
+      ? Number(pageParam)
+      : 1;
+
+  const searchParam = params.search;
+  const search = typeof searchParam === "string" ? searchParam : "";
 
   const queryClient = fetchQueryClient();
 
-  await queryClient.prefetchQuery({
+  await queryClient.prefetchQuery<FetchNotesResponse>({
     queryKey: ["notes", page, search],
     queryFn: () => fetchNotes({ page, perPage: 10, search }),
   });

@@ -5,9 +5,9 @@ import ReactPaginate from "react-paginate";
 import css from "./Pagination.module.css";
 
 interface PaginationProps {
-  pageCount: number;          // загальна кількість сторінок
-  currentPage: number;        // поточна сторінка (0-based для ReactPaginate)
-  onPageChange: (page: number) => void; // 0-based індекс
+  pageCount: number;
+  currentPage: number;
+  onPageChange: (page: number) => void;
 }
 
 const Pagination: FC<PaginationProps> = ({
@@ -18,8 +18,8 @@ const Pagination: FC<PaginationProps> = ({
   return (
     <ReactPaginate
       pageCount={pageCount}
-      forcePage={currentPage}
-      onPageChange={(event) => onPageChange(event.selected)}
+      forcePage={currentPage - 1}
+      onPageChange={(selectedItem) => onPageChange(selectedItem.selected + 1)}
       previousLabel="Prev"
       nextLabel="Next"
       containerClassName={css.pagination}

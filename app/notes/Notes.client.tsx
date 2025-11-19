@@ -1,18 +1,12 @@
 "use client";
 
 import { useState, type JSX } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
-import {
-  useQuery,
-  useMutation,
-  useQueryClient,
-} from "@tanstack/react-query";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useQuery } from "@tanstack/react-query";
+import { useDebounce } from "use-debounce";
 
 import {
   fetchNotes,
-  deleteNote,
-  createNote,
-  type CreateNoteDto,
   type FetchNotesResponse,
 } from "../../lib/api";
 
@@ -27,32 +21,25 @@ import css from "./NotesPage.module.css";
 export default function NotesClient(): JSX.Element {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const queryClient = useQueryClient();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const pageParam = searchParams.get("page");
-  const page = pageParam ? Number(pageParam) : 1;
   const search = searchParams.get("search") ?? "";
 
+  const page = pageParam ? Number(pageParam) : 1;
+
+  const [debouncedSearch] = useDebounce(search, 400);
+
   const { data, isLoading, error } = useQuery<FetchNotesResponse>({
-    queryKey: ["notes", page, search],
-    queryFn: () => fetchNotes({ page, perPage: 10, search }),
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: deleteNote,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["notes"] });
-    },
-  });
-
-  const createMutation = useMutation({
-    mutationFn: createNote,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["notes"] });
-      setIsModalOpen(false);
-    },
+    queryKey: ["notes", page, debouncedSearch],
+    queryFn: () =>
+      fetchNotes({
+        page,
+        perPage: 10,
+        search: debouncedSearch,
+      }),
+    placeholderData: (prev) => prev,
   });
 
   const handleSearch = (value: string): void => {
@@ -65,12 +52,12 @@ export default function NotesClient(): JSX.Element {
 
   const handlePageChange = (newPage: number): void => {
     const params = new URLSearchParams(searchParams.toString());
-    params.set("page", String(newPage + 1));
+    params.set("page", String(newPage));
     router.push(`/notes?${params.toString()}`);
   };
 
-  if (isLoading) return <p>Loading, please wait...</p>;
-  if (error || !data) return <p>Something went wrong.</p>;
+  if (isLoading) return <p>Loading...</p>;
+  if (error || !data) return <p>Error</p>;
 
   return (
     <div className={css.container}>
@@ -78,26 +65,19 @@ export default function NotesClient(): JSX.Element {
 
       <Pagination
         pageCount={data.totalPages}
-        currentPage={page - 1}
+        currentPage={page}
         onPageChange={handlePageChange}
       />
 
-      <SearchBox
-        initialValue={search}
-        onSearch={handleSearch}
-        onAddClick={() => setIsModalOpen(true)}
-      />
+      <SearchBox value={search} onSearch={handleSearch} onAddClick={() => setIsModalOpen(true)} />
 
       {isModalOpen && (
         <Modal onClose={() => setIsModalOpen(false)}>
-          <NoteForm onSubmit={(payload) => createMutation.mutate(payload)} />
+          <NoteForm onCancel={() => setIsModalOpen(false)} />
         </Modal>
       )}
 
-      <NoteList
-        notes={data.notes}
-        onDelete={(id) => deleteMutation.mutate(id)}
-      />
+      <NoteList notes={data.notes} />
     </div>
   );
 }
