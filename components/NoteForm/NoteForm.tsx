@@ -4,6 +4,7 @@ import type { FC } from "react";
 import { Formik, Form, Field, ErrorMessage } from "formik";
 import * as Yup from "yup";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+
 import { createNote, type CreateNoteDto } from "../../lib/api";
 import type { NoteTag } from "../../types/note";
 import css from "./NoteForm.module.css";
@@ -14,9 +15,9 @@ interface NoteFormProps {
 
 const tags: NoteTag[] = ["Todo", "Work", "Personal", "Meeting", "Shopping"];
 
-const validationSchema = Yup.object({
-  title: Yup.string().trim().required("Title is required"),
-  content: Yup.string().trim().required("Content is required"),
+const validationSchema = Yup.object<CreateNoteDto>({
+  title: Yup.string().required("Title is required"),
+  content: Yup.string().required("Content is required"),
   tag: Yup.mixed<NoteTag>().oneOf(tags).required("Tag is required"),
 });
 
@@ -24,7 +25,7 @@ const NoteForm: FC<NoteFormProps> = ({ onCancel }) => {
   const queryClient = useQueryClient();
 
   const mutation = useMutation({
-    mutationFn: (payload: CreateNoteDto) => createNote(payload),
+    mutationFn: createNote,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["notes"] });
       onCancel();
@@ -33,22 +34,13 @@ const NoteForm: FC<NoteFormProps> = ({ onCancel }) => {
 
   return (
     <Formik<CreateNoteDto>
-      initialValues={{
-        title: "",
-        content: "",
-        tag: "Todo",
-      }}
+      initialValues={{ title: "", content: "", tag: "Todo" }}
       validationSchema={validationSchema}
       onSubmit={(values) => mutation.mutate(values)}
     >
       {({ isValid }) => (
         <Form className={css.form}>
-          <Field
-            className={css.input}
-            type="text"
-            name="title"
-            placeholder="Note title"
-          />
+          <Field className={css.input} name="title" placeholder="Note title" />
           <ErrorMessage name="title" component="p" className={css.error} />
 
           <Field

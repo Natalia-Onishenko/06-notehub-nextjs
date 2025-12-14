@@ -1,29 +1,26 @@
 "use client";
 
-import type { FC } from "react";
+import type { FC, ChangeEvent } from "react";
 import css from "./SearchBox.module.css";
 
 interface SearchBoxProps {
   value: string;
-  onSearch: (value: string) => void;
-  onAddClick: () => void;
+  onChange: (value: string) => void;
 }
 
-const SearchBox: FC<SearchBoxProps> = ({ value, onSearch, onAddClick }) => {
-  return (
-    <div className={css.toolbar}>
-      <input
-        className={css.input}
-        type="text"
-        placeholder="Search notes..."
-        value={value}
-        onChange={(e) => onSearch(e.target.value)}
-      />
+const SearchBox: FC<SearchBoxProps> = ({ value, onChange }) => {
+  const handleChange = (event: ChangeEvent<HTMLInputElement>) => {
+    onChange(event.target.value);
+  };
 
-      <button className={css.button} type="button" onClick={onAddClick}>
-        + Create note
-      </button>
-    </div>
+  return (
+    <input
+      type="text"
+      className={css.input}
+      placeholder="Search notes..."
+      value={value}
+      onChange={handleChange}
+    />
   );
 };
 

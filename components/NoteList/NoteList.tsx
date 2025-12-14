@@ -16,7 +16,7 @@ const NoteList: FC<NoteListProps> = ({ notes }) => {
   const queryClient = useQueryClient();
 
   const mutation = useMutation({
-    mutationFn: (id: string) => deleteNote(id),
+    mutationFn: deleteNote,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["notes"] });
     },
@@ -27,7 +27,6 @@ const NoteList: FC<NoteListProps> = ({ notes }) => {
       {notes.map((note) => (
         <li key={note.id} className={css.listItem}>
           <h3 className={css.title}>{note.title}</h3>
-
           <p className={css.content}>{note.content}</p>
 
           <div className={css.footer}>
@@ -40,6 +39,7 @@ const NoteList: FC<NoteListProps> = ({ notes }) => {
 
               <button
                 className={css.button}
+                type="button"
                 onClick={() => mutation.mutate(note.id)}
               >
                 Delete
